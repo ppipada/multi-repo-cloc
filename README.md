@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout current repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run multi-repo cloc
         uses: ppipada/multi-repo-cloc@v1
@@ -74,7 +74,7 @@ jobs:
 
     steps:
       - name: Checkout current repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run multi-repo cloc
         id: cloc
@@ -103,16 +103,16 @@ jobs:
                 "ignoredFile": "ignored.txt"
               },
               {
-                "repo": "github.com/flexigpt/agentskills-go"
+                "repo": "github.com/myorg/myrepo1"
               },
               {
-                "repo": "github.com/flexigpt/inference-go"
+                "repo": "github.com/myorg/myrepo2"
               },
               {
-                "repo": "github.com/flexigpt/llmtools-go"
+                "repo": "github.com/myorg2/myrepo3"
               },
               {
-                "repo": "github.com/flexigpt/mapstore-go"
+                "repo": "github.com/myorg3/myrepo4"
               }
             ]
 
