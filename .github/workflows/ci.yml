@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Run action against current repo
+        id: cloc
+        uses: ./
+        with:
+          repos-json: '["self"]'
+          output-dir: .cloc-report
+          use-current-workspace: "true"
+          install-cloc: "true"
+          write-job-summary: "false"
+          print-summary: "true"
+          fail-on-repo-error: "true"
+          default-exclude-dir-json: "[]"
+          default-cloc-args-json: '["--vcs=git"]'
+
+      - name: Verify outputs exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "${{ steps.cloc.outputs.output_dir }}"
+          test -f "${{ steps.cloc.outputs.aggregate_json }}"
+          test -f "${{ steps.cloc.outputs.summary_markdown }}"
+          test -f "${{ steps.cloc.outputs.manifest_json }}"
+          test "${{ steps.cloc.outputs.repo_count }}" = "1"
+          test "${{ steps.cloc.outputs.scanned_repo_count }}" = "1"
+          test "${{ steps.cloc.outputs.failed_repo_count }}" = "0"
+
+      - name: Validate aggregate JSON shape
+        shell: bash
+        env:
+          AGGREGATE_JSON: ${{ steps.cloc.outputs.aggregate_json }}
+        run: |
+          set -euo pipefail
+          node -e "const fs=require('fs'); const p=process.env.AGGREGATE_JSON; const j=JSON.parse(fs.readFileSync(p,'utf8')); if (j.repo_count !== 1) throw new Error('repo_count mismatch'); if (j.scanned_repo_count !== 1) throw new Error('scanned_repo_count mismatch'); if (j.failed_repo_count !== 0) throw new Error('failed_repo_count mismatch');"
+
+      - name: Upload debug artifact on failure
+        if: ${{ failure() && steps.cloc.outputs.output_dir != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-repo-cloc-debug
+          path: ${{ steps.cloc.outputs.output_dir }}
+          if-no-files-found: ignore
+          retention-days: 7
